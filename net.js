@@ -113,7 +113,7 @@ Net.UI=function(div){
 				demo.style.color='blue'
 			},1000)
 		}
-		var txt = adjTxt.textContent
+		var txt = adjTxt.value
 		var parms = []
 		var vals=[]
 		txt.split(/[\n\r]+/).forEach(function(r,i){
