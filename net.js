@@ -104,6 +104,9 @@ Net.UI=function(div){
 	// text area for matrix input
 	demo.onclick=function(){
 		adjTxt.textContent = 'USE,0,0,0,0,0,0\nEE,0,0,1,0,0,0\nBI,1,0,0,0,0,0\nFC,1,0,0,0,0,0\nSN,0,0,1,0,0,0\nPE,0,0,1,0,0,0'
+		setTimeout(function(){
+			demo.hidden=true
+		},1000)
 	}
 	assembleNet.onclick=function(){
 		if(adjTxt.textContent.length==0){
