@@ -130,7 +130,7 @@ Net.UI=function(div){
 		adjTableDiv.appendChild(tb)
 		var tr = document.createElement('tr') // header row
 		tb.appendChild(tr)
-		var r = ['[from/to]'].concat(parms.map(function(x){return x.title}))
+		var r = ['[from\to]'].concat(parms.map(function(x){return x.title}))
 		r.forEach(function(h){
 			var th = document.createElement('th')
 			th.textContent=h
@@ -148,10 +148,32 @@ Net.UI=function(div){
 				td.textContent=v
 			})
 		})
-		
 
-
+		// assemble net
+		Net.UI.net = Net.assembleFromAdjacency(vals,parms)
+		// show paths
+		var div = document.createElement('div')
+		div.innerHTML='<h3>Connections found: </h3>'
+		var ol = document.createElement('ol')
+		div.appendChild(ol)
+		adjTableDiv.appendChild(div)
+		var links = []
+  		//{source: "Microsoft", target: "Amazon", type: "licensing"}
+		Object.getOwnPropertyNames(Net.UI.net.edges).forEach(function(ed){
+			var edli = document.createElement('li')
+			var edj = Net.UI.net.edges[ed]
+			ol.appendChild(edli)
+			edli.innerHTML=JSON.stringify(edj.FROM[0].properties)+' --('+JSON.stringify(edj.properties)+')--> '+JSON.stringify(edj.TO[0].properties)
+			links.push({
+				source:edj.FROM[0].properties.title,
+				target:(''+edj.properties.value),
+				type:edj.TO[0].properties.title
+			})	
+		})
+		// build the plot using http://bl.ocks.org/mbostock/1153292 as a starting point
 		4
+
+
 	}
 }
 
