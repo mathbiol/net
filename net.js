@@ -122,7 +122,11 @@ Net.UI=function(div){
 		txt.split(/[\n\r]+/).forEach(function(r,i){
 			var cc = r.split(/[\s,]+/)
 			parms[i]={title:cc[0]}
-			vals[i]=cc.slice(1).map(function(c){return +c})
+			vals[i]=cc.slice(1).map(function(c){ // <--- conection value captured here
+				var ci = +c
+				if (isNaN(ci)){ci=c} // in case it is a string of an object
+				return ci
+			})
 		})
 		// assemble table
 		adjTableDiv.innerHTML=''
