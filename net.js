@@ -1,4 +1,4 @@
-console.log('net.js loaded')
+console.log('net.js loaded');
 
 Net = function(){
     var d = (new Date).toJSON()
@@ -130,7 +130,9 @@ Net.UI=function(div){
 		adjTableDiv.appendChild(tb)
 		var tr = document.createElement('tr') // header row
 		tb.appendChild(tr)
-		var r = ['[from\to]'].concat(parms.map(function(x){return x.title}))
+		tb.style.fontFamily='courier'
+		tb.style.fontSize='small'
+		var r = ['[from->to]'].concat(parms.map(function(x){return x.title}))
 		r.forEach(function(h){
 			var th = document.createElement('th')
 			th.textContent=h
@@ -153,7 +155,7 @@ Net.UI=function(div){
 		Net.UI.net = Net.assembleFromAdjacency(vals,parms)
 		// show paths
 		var div = document.createElement('div')
-		div.innerHTML='<h3>Connections found: </h3>'
+		//div.innerHTML='Connections found:'
 		var ol = document.createElement('ol')
 		div.appendChild(ol)
 		adjTableDiv.appendChild(div)
@@ -164,6 +166,9 @@ Net.UI=function(div){
 			var edj = Net.UI.net.edges[ed]
 			ol.appendChild(edli)
 			edli.innerHTML=JSON.stringify(edj.FROM[0].properties)+' --('+JSON.stringify(edj.properties)+')--> '+JSON.stringify(edj.TO[0].properties)
+			edli.style.fontFamily='courier'
+			edli.style.color='navy'
+			edli.style.fontSize="x-small"
 			links.push({
 				source:edj.FROM[0].properties.title,
 				target:(''+edj.properties.value),
@@ -174,114 +179,165 @@ Net.UI=function(div){
 		var n3Div = document.createElement('div')
 		div.appendChild(n3Div)
 		div.id='n3Div'
-		Net.d3(n3Div)
+		Net.d3GraphLoad(n3Div)
 
-		4
-
-
+		// CSS
+		//$('circle').css({fill: '#ccc',stroke: '#333',strokeWidth: '1.5px'})
+		//$('text').css ({font: '10px sans-serif',pointerEvents: 'none',textShadow: '0 1px 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, -1px 0 0 #fff'})
 	}
 }
 
-Net.d3= function(div,net){ // assemble d3 network on div
+Net.d3GraphLoad=function(div,net){
+	//laod https://d3js.org/d3.v3.min.js if not there already
+	var d3GraphFun = function(div,net){
+		if(typeof(d3)=='undefined'){
+			$.getScript('https://d3js.org/d3.v3.min.js',function(){
+				Net.d3Graph(div,net)
+			})
+		}else{
+			Net.d3Graph(div,net)
+		}
+	}
+	// check if jQuery is there first
+	if(typeof(jQuery)=='undefined'){
+		scrp = document.createElement('script')
+		scrp.src='https://code.jquery.com/jquery-3.1.1.min.js'
+		scrp.onload=function(){
+			d3GraphFun(div,net)
+		}
+		document.head.appendChild(scrp)
+	}else{
+		d3GraphFun(div,net)
+	}
+		
+}
+
+Net.d3Graph= function(div,net){ // assemble d3 network on div
 	net = net || Net.UI.net
-	// taking clues from http://bl.ocks.org/mbostock/1153292
-	var links = []
-	var types ={}
-	Object.getOwnPropertyNames(net.edges).forEach(function(edid){
-		//console.log(net.edges[edid])
-		var edj=net.edges[edid]
-		var lnk = { // many later enable multiple source and target nodes
-			source:(edj.FROM[0].properties.title || JSON.stringify(edj.FROM[0].properties,null,3)),
-			target:(edj.TO[0].properties.title || JSON.stringify(edj.TO[0].properties,null,3)),
-			type:edj.properties.value||JSON.stringify(edj.properties,null,3)
+		// taking clues from http://bl.ocks.org/mbostock/1153292
+		var links = []
+		var types ={}
+		Object.getOwnPropertyNames(net.edges).forEach(function(edid){
+			//console.log(net.edges[edid])
+			var edj=net.edges[edid]
+			var lnk = { // many later enable multiple source and target nodes
+				source:(edj.FROM[0].properties.title || JSON.stringify(edj.FROM[0].properties,null,3)),
+				target:(edj.TO[0].properties.title || JSON.stringify(edj.TO[0].properties,null,3)),
+				type:edj.properties.value||JSON.stringify(edj.properties,null,3)
+			}
+			if(typeof(lnk.type)=='number'){
+				lnk.type=lnk.type.toString()
+			}
+			types[lnk.type]=true
+			links.push(lnk)	
+		})
+		types=Object.getOwnPropertyNames(types)
+		var nodes = {}
+		links.forEach(function(link) {
+			link.source = nodes[link.source] || (nodes[link.source] = {name: link.source});
+			link.target = nodes[link.target] || (nodes[link.target] = {name: link.target});
+		});
+
+		var width = 300, height = 300;
+
+		var force = d3.layout.force()
+			.nodes(d3.values(nodes))
+			.links(links)
+			.size([width, height])
+			.linkDistance(60)
+			.charge(-300)
+			.on("tick", tick)
+			.start();
+
+		var svg = d3.select(div).append("svg")
+			.attr("width", width)
+			.attr("height", height);
+
+		// Per-type markers, as they don't inherit styles.
+		svg.append("defs").selectAll("marker")
+			//.data(["suit", "licensing", "resolved"])
+			.data(types)
+			.enter().append("marker")
+			.attr("id", function(d) { 
+				return d; 
+			 })
+			.attr("viewBox", "0 -5 10 10")
+			.attr("refX", 15)
+			.attr("refY", -1.5)
+			.attr("markerWidth", 6)
+			.attr("markerHeight", 6)
+			.attr("orient", "auto")
+			.append("path")
+			.attr("d", "M0,-5L10,0L0,5");
+
+
+		var path = svg.append("g").selectAll("path")
+			.data(force.links())
+			.enter().append("path")
+			.attr("class", function(d) { return "link " + d.type; })
+			.attr("marker-end", function(d) { return "url(#" + d.type + ")"; })
+			.attr("fill","none")
+			.attr("stroke","#666")
+			.attr("strokeWidth","1.5px")
+
+		var circle = svg.append("g").selectAll("circle")
+			.data(force.nodes())
+			.enter().append("circle")
+			.attr("r", 4)
+			.call(force.drag)
+			.attr("fill","#ccc")
+			.attr("stroke","#333")
+			.attr("strokeWidth","1.5px")
+
+
+		var text = svg.append("g").selectAll("text")
+			.data(force.nodes())
+			.enter().append("text")
+			.attr("x", 8)
+			.attr("y", ".31em")
+			.text(function(d) { return d.name; })
+			.attr("font","10px sans-serif")
+			.attr("pointerEvents","none")
+			.attr("textShadow","0 1px 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, -1px 0 0 #fff")
+
+		
+		// if it was set as CSS, the styles would have been
+		/*
+		$(".link").css({
+			fill: "none",
+			stroke: "#666",
+			"strokeWidth": "1.5px"
+		})
+		$('circle').css({
+			fill: '#ccc',
+			stroke: '#333',
+			strokeWidth: '1.5px'
+		})
+		$('text').css ({
+			font: '10px sans-serif',
+			pointerEvents: 'none',
+			textShadow: '0 1px 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, -1px 0 0 #fff'
+		})
+		*/
+
+		// Use elliptical arc path segments to doubly-encode directionality.
+		function tick() {
+		  path.attr("d", linkArc);
+		  circle.attr("transform", transform);
+		  text.attr("transform", transform);
 		}
-		if(typeof(lnk.type)=='number'){
-			lnk.type=lnk.type.toString()
+
+		function linkArc(d) {
+		  var dx = d.target.x - d.source.x,
+			  dy = d.target.y - d.source.y,
+			  dr = Math.sqrt(dx * dx + dy * dy);
+		  return "M" + d.source.x + "," + d.source.y + "A" + dr + "," + dr + " 0 0,1 " + d.target.x + "," + d.target.y;
 		}
-		types[lnk.type]=true
-		links.push(lnk)	
-	})
-	types=Object.getOwnPropertyNames(types)
-	var nodes = {}
-	links.forEach(function(link) {
-  		link.source = nodes[link.source] || (nodes[link.source] = {name: link.source});
-  		link.target = nodes[link.target] || (nodes[link.target] = {name: link.target});
-	});
 
-	var width = 300, height = 300;
-
-	var force = d3.layout.force()
-		.nodes(d3.values(nodes))
-		.links(links)
-		.size([width, height])
-		.linkDistance(60)
-		.charge(-300)
-		.on("tick", tick)
-		.start();
-
-	var svg = d3.select("body").append("svg")
-		.attr("width", width)
-		.attr("height", height);
-
-	// Per-type markers, as they don't inherit styles.
-	svg.append("defs").selectAll("marker")
-		//.data(["suit", "licensing", "resolved"])
-		.data(types)
-	  	.enter().append("marker")
-		.attr("id", function(d) { 
-			return d; 
-		 })
-		.attr("viewBox", "0 -5 10 10")
-		.attr("refX", 15)
-		.attr("refY", -1.5)
-		.attr("markerWidth", 6)
-		.attr("markerHeight", 6)
-		.attr("orient", "auto")
-	  	.append("path")
-		.attr("d", "M0,-5L10,0L0,5");
-
+		function transform(d) {
+		  return "translate(" + d.x + "," + d.y + ")";
+		}
 	
-	var path = svg.append("g").selectAll("path")
-		.data(force.links())
-	  	.enter().append("path")
-		.attr("class", function(d) { return "link " + d.type; })
-		.attr("marker-end", function(d) { return "url(#" + d.type + ")"; });
-
-	var circle = svg.append("g").selectAll("circle")
-		.data(force.nodes())
-	  	.enter().append("circle")
-		.attr("r", 6)
-		.call(force.drag);
-
-	var text = svg.append("g").selectAll("text")
-		.data(force.nodes())
-	  	.enter().append("text")
-		.attr("x", 8)
-		.attr("y", ".31em")
-		.text(function(d) { return d.name; });
-
-	// Use elliptical arc path segments to doubly-encode directionality.
-	function tick() {
-	  path.attr("d", linkArc);
-	  circle.attr("transform", transform);
-	  text.attr("transform", transform);
-	}
-
-	function linkArc(d) {
-	  var dx = d.target.x - d.source.x,
-		  dy = d.target.y - d.source.y,
-		  dr = Math.sqrt(dx * dx + dy * dy);
-	  return "M" + d.source.x + "," + d.source.y + "A" + dr + "," + dr + " 0 0,1 " + d.target.x + "," + d.target.y;
-	}
-
-	function transform(d) {
-	  return "translate(" + d.x + "," + d.y + ")";
-	}
-
-
-
-	4
-
 }
 
 
