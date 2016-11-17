@@ -26,7 +26,8 @@ Node = function(p,nt){ // note second input argument is the net, or nets, this i
         edg.lastParent=this
         return edg
     }
-    nt.nodes[this.id]=this   
+    nt.nodes[this.id]=this
+    nt.nodes[this.id].parentNet=nt
 }
 
 Edge = function(p,nt){
@@ -47,6 +48,7 @@ Edge = function(p,nt){
         return nd
     }
     nt.edges[this.id]=this
+    nt.edges[this.id].parentNet=nt
 }
 
 // Net fun
@@ -57,6 +59,11 @@ Net.segment=function(M,t){ // segments matrix M with value t
     return c>=t
         })
     })
+}
+
+Net.paths=function(startNode,endNode){
+	//var nt = startNode.parentNet
+	4
 }
 
 // assemble network from adjancency matrix
@@ -103,7 +110,7 @@ Net.UI=function(div){
 	div.innerHTML=h
 	// text area for matrix input
 	demo.onclick=function(){
-		adjTxt.textContent = 'USE,0,0,0,0,0,0\nEE,0,0,1,0,0,0\nBI,1,0,0,0,0,0\nFC,1,0,0,0,0,0\nSN,0,0,1,0,0,0\nPE,0,0,1,0,0,0'
+		adjTxt.textContent = 'USE,1,1,0,0,0,0\nEE,0,0,0,1,0,0\nBI,1,0,1,0,0,0\nFC,1,0,0,0,0,0\nSN,0,0,1,1,0,0\nPE,0,0,1,0,0,0'
 		setTimeout(function(){
 			demo.hidden=true
 		},1000)
@@ -165,11 +172,11 @@ Net.UI=function(div){
 		adjTableDiv.appendChild(div)
 		var links = []
   		//{source: "Microsoft", target: "Amazon", type: "licensing"}
-		Object.getOwnPropertyNames(Net.UI.net.edges).forEach(function(ed){
+		Object.getOwnPropertyNames(Net.UI.net.edges).forEach(function(ed,i){
 			var edli = document.createElement('li')
 			var edj = Net.UI.net.edges[ed]
 			ol.appendChild(edli)
-			edli.innerHTML=JSON.stringify(edj.FROM[0].properties)+' --('+JSON.stringify(edj.properties)+')--> '+JSON.stringify(edj.TO[0].properties)
+			edli.innerHTML=JSON.stringify(edj.FROM[0].properties.title)+' <input id="startNode_'+i+'" type="radio" class="startNode">--('+JSON.stringify(edj.properties.value)+')--><input id="endNode_'+i+'" type="radio" class="endNode"> '+JSON.stringify(edj.TO[0].properties.title)
 			edli.style.fontFamily='courier'
 			edli.style.color='navy'
 			edli.style.fontSize="x-small"
@@ -177,8 +184,38 @@ Net.UI=function(div){
 				source:edj.FROM[0].properties.title,
 				target:(''+edj.properties.value),
 				type:edj.TO[0].properties.title
-			})	
+			})
+			// link nodes to radio button
+			edli.fromNode=edj.FROM[0]
+			edli.toNode=edj.TO[0]	
 		})
+		var IPstart = document.getElementsByClassName("startNode")
+		var IPend = document.getElementsByClassName("endNode")
+		var startNodes=[], endNodes=[]
+		for(var i = 0 ; i<IPstart.length ; i++){
+			startNodes.push(IPstart[i])
+			endNodes.push(IPend[i])
+		}
+		startNodes.forEach(function(ip,i){
+			ip.onchange=function(evi){
+				if(evi.currentTarget.checked){
+					startNodes.forEach(function(evj,j){
+						if((i!==j)&&(evj.checked)){evj.checked=false}
+					})
+				}
+			}
+		})
+		endNodes.forEach(function(ip,i){
+			ip.onchange=function(evi){
+				if(evi.currentTarget.checked){
+					endNodes.forEach(function(evj,j){
+						if((i!==j)&&(evj.checked)){evj.checked=false}
+					})
+				}
+			}
+		})
+		// select firs edge by default
+		startNodes[0].click();endNodes[0].click()
 		// build the plot using http://bl.ocks.org/mbostock/1153292 as a starting point
 		var n3Div = document.createElement('div')
 		div.appendChild(n3Div)
@@ -195,7 +232,7 @@ Net.d3GraphLoad=function(div,net){
 	//laod https://d3js.org/d3.v3.min.js if not there already
 	var d3GraphFun = function(div,net){
 		if(typeof(d3)=='undefined'){
-			$.getScript('https://d3js.org/d3.v3.min.js',function(){
+			$.getScript('d3.v3.min.js',function(){
 				Net.d3Graph(div,net)
 			})
 		}else{
@@ -205,7 +242,7 @@ Net.d3GraphLoad=function(div,net){
 	// check if jQuery is there first
 	if(typeof(jQuery)=='undefined'){
 		scrp = document.createElement('script')
-		scrp.src='https://code.jquery.com/jquery-3.1.1.min.js'
+		scrp.src='jquery-3.1.1.min.js'
 		scrp.onload=function(){
 			d3GraphFun(div,net)
 		}
