@@ -66,6 +66,8 @@ Net.paths=function(startNode,endNode){
 	4
 }
 
+
+
 // assemble network from adjancency matrix
 
 Net.assembleFromAdjacency=function(M,N,nt){ // assemble net using adjacency matrix M, vector of nodes N, and graph nt
@@ -204,6 +206,9 @@ Net.UI=function(div){
 					})
 				}
 			}
+			ip.onclick=function(){
+				setTimeout(Net.UI.getStartEnd,100)
+			}
 		})
 		endNodes.forEach(function(ip,i){
 			ip.onchange=function(evi){
@@ -213,7 +218,18 @@ Net.UI=function(div){
 					})
 				}
 			}
+			ip.onclick=function(){
+				setTimeout(Net.UI.getStartEnd,100)
+			}
 		})
+		Net.UI.getStartEnd=function(){ // look for start en end nodes in the UI
+			var X = startNodes
+			var Y = endNodes
+			Net.UI.startInput=X.filter(function(N){return N.checked})[0]
+			Net.UI.endInput=Y.filter(function(N){return N.checked})[0]
+			Net.UI.startNode=Net.UI.startInput.parentElement.fromNode
+			Net.UI.endNode=Net.UI.endInput.parentElement.toNode		
+		}
 		// select firs edge by default
 		startNodes[0].click();endNodes[0].click()
 		// build the plot using http://bl.ocks.org/mbostock/1153292 as a starting point
