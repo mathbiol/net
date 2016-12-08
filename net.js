@@ -61,8 +61,10 @@ Net.segment=function(M,t){ // segments matrix M with value t
     })
 }
 
-Net.paths=function(startNode,endNode){
+Net.paths=function(startNode,endNode,paths){
 	//var nt = startNode.parentNet
+	var paths = paths || [startNode]
+	startNode.checkedPath=true
 	4
 }
 
@@ -228,7 +230,8 @@ Net.UI=function(div){
 			Net.UI.startInput=X.filter(function(N){return N.checked})[0]
 			Net.UI.endInput=Y.filter(function(N){return N.checked})[0]
 			Net.UI.startNode=Net.UI.startInput.parentElement.fromNode
-			Net.UI.endNode=Net.UI.endInput.parentElement.toNode		
+			Net.UI.endNode=Net.UI.endInput.parentElement.toNode
+			Net.paths(Net.UI.startNode,Net.UI.endNode)
 		}
 		// select firs edge by default
 		startNodes[0].click();endNodes[0].click()
