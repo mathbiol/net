@@ -148,9 +148,10 @@ Net.UI=function(div){
 		tb.style.fontFamily='courier'
 		tb.style.fontSize='small'
 		var r = ['[from->to]'].concat(parms.map(function(x){return x.title}))
-		r.forEach(function(h){
+		r.forEach(function(h,i){
 			var th = document.createElement('th')
-			th.textContent=h
+			if(i>0){h+='<input id="endNode_'+(i-1)+'" type="radio" class="endNode">'}
+			th.innerHTML=h
 			tr.appendChild(th)
 		})
 		vals.forEach(function(r,i){
@@ -158,8 +159,8 @@ Net.UI=function(div){
 			tb.appendChild(tr)
 			var th = document.createElement('th')
 			tr.appendChild(th)
-			th.textContent=parms[i].title
-			r.forEach(function(v){
+			th.innerHTML=parms[i].title+'<input id="startNode_'+(i)+'" type="radio" class="startNode">'
+			r.forEach(function(v,j){
 				var td = document.createElement('td')
 				tr.appendChild(td)
 				td.textContent=v
@@ -180,7 +181,7 @@ Net.UI=function(div){
 			var edli = document.createElement('li')
 			var edj = Net.UI.net.edges[ed]
 			ol.appendChild(edli)
-			edli.innerHTML=JSON.stringify(edj.FROM[0].properties.title)+' <input id="startNode_'+i+'" type="radio" class="startNode">--('+JSON.stringify(edj.properties.value)+')--><input id="endNode_'+i+'" type="radio" class="endNode"> '+JSON.stringify(edj.TO[0].properties.title)
+			edli.innerHTML=JSON.stringify(edj.FROM[0].properties.title)+' --('+JSON.stringify(edj.properties.value)+')--> '+JSON.stringify(edj.TO[0].properties.title)
 			edli.style.fontFamily='courier'
 			edli.style.color='navy'
 			edli.style.fontSize="x-small"
@@ -231,7 +232,7 @@ Net.UI=function(div){
 			Net.UI.endInput=Y.filter(function(N){return N.checked})[0]
 			Net.UI.startNode=Net.UI.startInput.parentElement.fromNode
 			Net.UI.endNode=Net.UI.endInput.parentElement.toNode
-			Net.paths(Net.UI.startNode,Net.UI.endNode)
+			//Net.paths(Net.UI.startNode,Net.UI.endNode)
 		}
 		// select firs edge by default
 		startNodes[0].click();endNodes[0].click()
