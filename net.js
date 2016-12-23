@@ -147,10 +147,15 @@ Net.UI=function(div){
 		tb.appendChild(tr)
 		tb.style.fontFamily='courier'
 		tb.style.fontSize='small'
-		var r = ['[from->to]'].concat(parms.map(function(x){return x.title}))
+		var r = ['from<i class="fa fa-arrow-right" aria-hidden="true"></i>to|'].concat(parms.map(function(x){return x.title}))
 		r.forEach(function(h,i){
 			var th = document.createElement('th')
-			if(i>0){h+='<input id="endNode_'+(i-1)+'" type="radio" class="endNode">'}
+			if(i>0){
+				h='<input id="endNode_'+(i-1)+'" type="radio" class="endNode">'+h+'&nbsp;'
+				th.style.borderBottom='solid'
+			}else{
+				th.style.textAlign="right"
+			}
 			th.innerHTML=h
 			tr.appendChild(th)
 		})
@@ -159,7 +164,9 @@ Net.UI=function(div){
 			tb.appendChild(tr)
 			var th = document.createElement('th')
 			tr.appendChild(th)
-			th.innerHTML=parms[i].title+'<input id="startNode_'+(i)+'" type="radio" class="startNode">'
+			th.innerHTML=parms[i].title+'<input id="startNode_'+(i)+'" type="radio" class="startNode">&nbsp;'
+			th.style.textAlign="right"
+			th.style.borderRight='solid'
 			r.forEach(function(v,j){
 				var td = document.createElement('td')
 				tr.appendChild(td)
