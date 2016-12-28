@@ -110,7 +110,7 @@ Net.UI=function(div){
 
 	var h = '<h3 style="color:maroon">NetJS <a href="https://github.com/mathbiol/net" target="_blank">source</a></h3>'
 	h +='<table id="adjMatrixTable"><tr><td id="adjTd" style="vertical-align:top">'
-	h +='<div>|Adjacency Matrix <span id="hideShowTxt" style="color:blue">hide</span>| <div><textarea id="adjTxt" style="width:200;height:200"></textarea></div><span id="demo" style="color:blue;cursor:pointer">demo</span> <button id="assembleNet">Assemble network</button><hr></div>'
+	h +='<div>Adjacency Matrix <span id="hideShowTxt" style="color:blue">hide</span> <div><textarea id="adjTxt" style="width:200;height:200"></textarea></div><span id="demo" style="color:blue;cursor:pointer">demo</span> <button id="assembleNet">Assemble network</button><hr></div>'
 	h +='</td><td style="vertical-align:top">'
 	h +='<div id="selectToConnect" align="center" hidden="true">(select to connect)</div><hr><div id="adjTableDiv">...</div>'
 	h +='</td></tr></table>'
@@ -287,7 +287,7 @@ Net.UI=function(div){
 			// output only
 			if(Net.UI.endInput&&(!Net.UI.startInput)){
 				console.log('only output: ',Net.UI.endInput)
-				Net.UI.pathList(Net.UI.endInput.EDGESfrom)
+				Net.UI.pathList(Net.UI.endInput.EDGESto)
 			}
 			// both input and output available
 			if(Net.UI.startInput&&Net.UI.endInput){
@@ -302,6 +302,21 @@ Net.UI=function(div){
 			//Net.paths(Net.UI.startNode,Net.UI.endNode)
 		}
 		Net.UI.pathList=function(edjs){
+			if(!Array.isArray(edjs)){ // make sure edjs is an Array
+				edjs=Object.getOwnPropertyNames(edjs).map(function(Ind){return edjs[Ind]})
+			}
+			var div = document.getElementById('pathList')
+			div.innerHTML=""
+			var ol = document.createElement('ol')
+			div.appendChild(ol)
+			edjs.forEach(function(edj){
+				var edli = document.createElement('li')
+				edli.innerHTML=JSON.stringify(edj.FROM[0].properties.title)+' --('+JSON.stringify(edj.properties.value)+')--> '+JSON.stringify(edj.TO[0].properties.title)
+				edli.style.fontFamily='courier'
+				edli.style.color='navy'
+				edli.style.fontSize="x-small"
+				ol.appendChild(edli)
+			})
 			4
 		}
 		// select firs edge by default
