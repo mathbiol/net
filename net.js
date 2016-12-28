@@ -22,7 +22,7 @@ Node = function(p,nt){ // note second input argument is the net, or nets, this i
     this.EDGESto=[]
     this.EDGESfrom=[]
     this.edge=function(edg){
-        this.EDGESto.push(edg)
+        this.EDGESfrom.push(edg)
         edg.lastParent=this
         return edg
     }
@@ -44,7 +44,7 @@ Edge = function(p,nt){
     this.to=function(nd){
         this.TO.push(nd)
         this.FROM.push(this.lastParent)
-        nd.EDGESfrom.push(this)      
+        nd.EDGESto.push(this)      
         return nd
     }
     nt.edges[this.id]=this
@@ -109,9 +109,25 @@ Net.assembleFromAdjacency=function(M,N,nt){ // assemble net using adjacency matr
 Net.UI=function(div){
 
 	var h = '<h3 style="color:maroon">NetJS <a href="https://github.com/mathbiol/net" target="_blank">source</a></h3>'
-	h +='<div>Adjacency Matrix: <div><textarea id="adjTxt" style="width:200;height:200"></textarea></div><span id="demo" style="color:blue;cursor:pointer">demo</span> <button id="assembleNet">Assemble network</button></div>'
-	h +='<div id="adjTableDiv">...</div>'
+	h +='<table id="adjMatrixTable"><tr><td id="adjTd" style="vertical-align:top">'
+	h +='<div>|Adjacency Matrix <span id="hideShowTxt" style="color:blue">hide</span>| <div><textarea id="adjTxt" style="width:200;height:200"></textarea></div><span id="demo" style="color:blue;cursor:pointer">demo</span> <button id="assembleNet">Assemble network</button><hr></div>'
+	h +='</td><td style="vertical-align:top">'
+	h +='<div id="selectToConnect" align="center" hidden="true">(select to connect)</div><hr><div id="adjTableDiv">...</div>'
+	h +='</td></tr></table>'
 	div.innerHTML=h
+	// hide/show behaviour
+	hideShowTxt.style.cursor="pointer"
+	hideShowTxt.onclick=function(){
+		if(this.textContent=='hide'){
+			adjTxt.hidden=assembleNet.hidden=true
+			this.textContent='show'
+		}else{
+			adjTxt.hidden=assembleNet.hidden=false
+			this.textContent='hide'
+		}
+		4
+	}
+
 	// text area for matrix input
 	demo.onclick=function(){
 		adjTxt.textContent = 'USE,1,1,0,0,0,0\nEE,0,0,0,1,0,0\nBI,1,0,1,0,0,0\nFC,1,0,0,0,0,0\nSN,0,0,1,1,0,0\nPE,0,0,1,0,0,0'
@@ -120,6 +136,7 @@ Net.UI=function(div){
 		},1000)
 	}
 	assembleNet.onclick=function(){
+		selectToConnect.hidden=false
 		if(adjTxt.textContent.length==0){
 			demo.style.color='red'
 			demo.click()
@@ -153,6 +170,7 @@ Net.UI=function(div){
 			if(i>0){
 				h='<input id="endNode_'+(i-1)+'" type="radio" class="endNode">'+h+'&nbsp;'
 				th.style.borderBottom='solid'
+				th.nd=i-1 // node index
 			}else{
 				th.style.textAlign="right"
 			}
@@ -167,6 +185,7 @@ Net.UI=function(div){
 			th.innerHTML=parms[i].title+'<input id="startNode_'+(i)+'" type="radio" class="startNode">&nbsp;'
 			th.style.textAlign="right"
 			th.style.borderRight='solid'
+			th.nd=i // node index
 			r.forEach(function(v,j){
 				var td = document.createElement('td')
 				tr.appendChild(td)
@@ -177,11 +196,18 @@ Net.UI=function(div){
 		// assemble net
 		Net.UI.net = Net.assembleFromAdjacency(vals,parms)
 		// show paths
-		var div = document.createElement('div')
+		if(document.getElementById('pathList')){
+			var div = document.getElementById('pathList')
+			div.innerHTML=""
+		}else{
+			var div = document.createElement('div')
+			div.id="pathList"		
+		}
 		//div.innerHTML='Connections found:'
 		var ol = document.createElement('ol')
 		div.appendChild(ol)
-		adjTableDiv.appendChild(div)
+		//adjTableDiv.appendChild(div)
+		adjTd.appendChild(div)
 		var links = []
   		//{source: "Microsoft", target: "Amazon", type: "licensing"}
 		Object.getOwnPropertyNames(Net.UI.net.edges).forEach(function(ed,i){
@@ -198,8 +224,8 @@ Net.UI=function(div){
 				type:edj.TO[0].properties.title
 			})
 			// link nodes to radio button
-			edli.fromNode=edj.FROM[0]
-			edli.toNode=edj.TO[0]	
+			//edli.fromNode=edj.FROM[0]
+			//edli.toNode=edj.TO[0]	
 		})
 		var IPstart = document.getElementsByClassName("startNode")
 		var IPend = document.getElementsByClassName("endNode")
@@ -216,7 +242,11 @@ Net.UI=function(div){
 					})
 				}
 			}
+			ip.onmouseover=function(){
+				Net.UI.startValOver=this.checked
+			}
 			ip.onclick=function(){
+				Net.UI.startValOver=this.checked=!Net.UI.startValOver
 				setTimeout(Net.UI.getStartEnd,100)
 			}
 		})
@@ -228,7 +258,11 @@ Net.UI=function(div){
 					})
 				}
 			}
+			ip.onmouseover=function(){
+				Net.UI.endValOver=this.checked
+			}
 			ip.onclick=function(){
+				Net.UI.endValOver=this.checked=!Net.UI.endValOver
 				setTimeout(Net.UI.getStartEnd,100)
 			}
 		})
@@ -237,18 +271,48 @@ Net.UI=function(div){
 			var Y = endNodes
 			Net.UI.startInput=X.filter(function(N){return N.checked})[0]
 			Net.UI.endInput=Y.filter(function(N){return N.checked})[0]
-			Net.UI.startNode=Net.UI.startInput.parentElement.fromNode
-			Net.UI.endNode=Net.UI.endInput.parentElement.toNode
+			if(Net.UI.startInput){
+				// get the actual node ref instead of the index
+				Net.UI.startInput=Net.UI.net.nodes[Object.getOwnPropertyNames(Net.UI.net.nodes)[Net.UI.startInput.parentNode.nd]]
+			}
+			if(Net.UI.endInput){
+				// get the actual node ref instead of the index
+				Net.UI.endInput=Net.UI.net.nodes[Object.getOwnPropertyNames(Net.UI.net.nodes)[Net.UI.endInput.parentNode.nd]]
+			}
+			// input only
+			if(Net.UI.startInput&&(!Net.UI.endInput)){
+				console.log('only input: ',Net.UI.startInput)
+				Net.UI.pathList(Net.UI.startInput.EDGESfrom)
+			}
+			// output only
+			if(Net.UI.endInput&&(!Net.UI.startInput)){
+				console.log('only output: ',Net.UI.endInput)
+				Net.UI.pathList(Net.UI.endInput.EDGESfrom)
+			}
+			// both input and output available
+			if(Net.UI.startInput&&Net.UI.endInput){
+				console.log('both input: ',Net.UI.startInput, 'and output:',Net.UI.endInput)
+				Net.UI.pathList(Net.UI.net.edges)
+			}
+			// neither input nor output available
+			if((!Net.UI.startInput)&&(!Net.UI.endInput)){
+				console.log('neither input nor output available')
+				Net.UI.pathList(Net.UI.net.edges)
+			}
 			//Net.paths(Net.UI.startNode,Net.UI.endNode)
 		}
+		Net.UI.pathList=function(edjs){
+			4
+		}
 		// select firs edge by default
-		startNodes[0].click();endNodes[0].click()
+		// startNodes[0].click();endNodes[0].click()
 		// build the plot using http://bl.ocks.org/mbostock/1153292 as a starting point
 		var n3Div = document.createElement('div')
-		div.appendChild(n3Div)
-		div.id='n3Div'
+		//div.appendChild(n3Div)
+		adjTableDiv.appendChild(n3Div)
+		n3Div.id='n3Div'
 		Net.d3GraphLoad(n3Div)
-
+		
 		// CSS
 		//$('circle').css({fill: '#ccc',stroke: '#333',strokeWidth: '1.5px'})
 		//$('text').css ({font: '10px sans-serif',pointerEvents: 'none',textShadow: '0 1px 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, -1px 0 0 #fff'})
